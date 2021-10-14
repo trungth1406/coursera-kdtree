@@ -56,23 +56,12 @@ public class KdTree {
                 Point2D parentPoint = parentNode.p;
                 if (isLeftOrDown)
                 {
-                    // How should we calculate ymax
-                    double yMax;
-                    if (parentPoint.y() < point2D.y())
-                    {
-                        yMax = 1;
-                    }
-                    else
-                    {
-                        yMax = point2D.y();
-                    }
-                    rectHV = new RectHV(0, 0, parentPoint.x(), yMax);
+                    rectHV = new RectHV(parentNodeRect.xmin(), parentNodeRect.ymin(), parentPoint.x(), parentNodeRect.ymax());
                 }
                 else
                 {
-                    rectHV = new RectHV(parentPoint.x(), 0, 1, 1);
+                    rectHV = new RectHV(parentPoint.x(), parentNodeRect.ymin(), parentNodeRect.xmax(), parentNodeRect.ymax());
                 }
-
             }
             else
             {
@@ -80,11 +69,11 @@ public class KdTree {
                 Point2D parentPoint = parentNode.p;
                 if (isLeftOrDown)
                 {
-                    rectHV = new RectHV(0, 0, parentNodeRect.xmax(), parentPoint.y());
+                    rectHV = new RectHV(parentNodeRect.xmin(), parentNodeRect.ymin(), parentNodeRect.xmax(), parentPoint.y());
                 }
                 else
                 {
-                    rectHV = new RectHV(0, parentPoint.y(), parentNodeRect.xmax(), parentNodeRect.ymax());
+                    rectHV = new RectHV(parentNodeRect.xmin(), parentPoint.y(), parentNodeRect.xmax(), parentNodeRect.ymax());
                 }
             }
             return new Node(point2D, rectHV);
@@ -96,7 +85,7 @@ public class KdTree {
             {
                 curent.lb = insert(curent.lb, curent, point2D, false, true);
             }
-            else if (point2D.x() > curent.p.x())
+            else if (point2D.x() >= curent.p.x())
             {
                 curent.rt = insert(curent.rt, curent, point2D, false, false);
             }
@@ -203,19 +192,28 @@ public class KdTree {
 
     private void drawLine(Node current, boolean isVertical)
     {
+        StdDraw.setPenColor(Color.BLACK);
+        StdDraw.setPenRadius(0.009);
         current.p.draw();
         Point2D currentPoint = current.p;
-        if (isVertical)
+        StdDraw.setPenRadius();
+        if (current.rect == null)
         {
             StdDraw.setPenColor(Color.RED);
-            currentPoint.drawTo(new Point2D(currentPoint.x(), 0));
             currentPoint.drawTo(new Point2D(currentPoint.x(), 1));
+            currentPoint.drawTo(new Point2D(currentPoint.x(), 0));
+        }
+        else if (isVertical)
+        {
+            StdDraw.setPenColor(Color.RED);
+            currentPoint.drawTo(new Point2D(currentPoint.x(), current.rect.ymax()));
+            currentPoint.drawTo(new Point2D(currentPoint.x(), current.rect.ymin()));
         }
         else
         {
             StdDraw.setPenColor(Color.BLUE);
-            currentPoint.drawTo(new Point2D(0, currentPoint.y()));
-            currentPoint.drawTo(new Point2D(1, currentPoint.y()));
+            currentPoint.drawTo(new Point2D(current.rect.xmax(), currentPoint.y()));
+            currentPoint.drawTo(new Point2D(current.rect.xmin(), currentPoint.y()));
         }
     }
 
@@ -234,20 +232,24 @@ public class KdTree {
     {
         if (node == null) return;
 
-        if (isIntersect(node, rect))
+        if (rect.intersects(node.rect))
         {
-            allPointsInRange.add(node.p);
+
+            if (isIntersect(node, rect))
+            {
+                allPointsInRange.add(node.p);
+            }
+            if (node.lb != null)
+            {
+                range(node.lb, rect, allPointsInRange);
+            }
+
+            if (node.rt != null)
+            {
+                range(node.rt, rect, allPointsInRange);
+            }
         }
 
-        if (node.lb != null)
-        {
-            range(node.lb, rect, allPointsInRange);
-        }
-
-        if (node.rt != null)
-        {
-            range(node.rt, rect, allPointsInRange);
-        }
     }
 
     private boolean isIntersect(Node node, RectHV rect)
@@ -263,29 +265,26 @@ public class KdTree {
             throw new IllegalArgumentException();
         }
 
-        return this.root.p;
+        return this.nearest(root, p);
     }
 
     private Point2D nearest(Node currentNode, Point2D p)
     {
-        if (currentNode == null)
-        {
-            return null;
-        }
 
-        if (p.x() < currentNode.p.x())
-        {
-            return this.nearest(currentNode.lb, p);
-        }
-        else if (p.x() > currentNode.p.x())
-        {
-            return this.nearest(currentNode.rt, p);
-        }
-        else
+        if (currentNode.rect.contains(p))
         {
 
         }
-        return currentNode.p;
+
+        else if (currentNode.rt != null)
+        {
+            return nearest(currentNode.rt, p);
+        }
+        else if (currentNode.lb != null)
+        {
+            return nearest(currentNode.lb, p);
+        }
+        return null;
     }
 
     private static class Node {
