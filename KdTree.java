@@ -4,6 +4,7 @@
  *  Description:
  **************************************************************************** */
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.StdDraw;
@@ -264,28 +265,30 @@ public class KdTree {
         {
             throw new IllegalArgumentException();
         }
-
-        return this.nearest(root, p);
+        return nearest(root, p, root.p);
     }
 
-    private Point2D nearest(Node currentNode, Point2D p)
+    private Point2D nearest(Node currentNode, Point2D p, Point2D currentNearest)
     {
 
-        if (currentNode.rect.contains(p))
+        Point2D currentNodePoint = currentNode.p;
+        if (currentNodePoint.distanceTo(p) <= currentNearest.distanceTo(p))
         {
-
+            currentNearest = new Point2D(currentNode.p.x(), currentNode.p.y());
         }
 
-        else if (currentNode.rt != null)
+        if (currentNode.lb != null)
         {
-            return nearest(currentNode.rt, p);
+            currentNearest = nearest(currentNode.lb, p, currentNearest);
         }
-        else if (currentNode.lb != null)
+
+        if (currentNode.rt != null)
         {
-            return nearest(currentNode.lb, p);
+            currentNearest = nearest(currentNode.rt, p, currentNearest);
         }
-        return null;
+        return new Point2D(currentNearest.x(), currentNearest.y());
     }
+
 
     private static class Node {
         private Point2D p;      // the point
@@ -310,27 +313,23 @@ public class KdTree {
         kdTree.insert(new Point2D(.2, .3));
         kdTree.insert(new Point2D(.4, .7));
         kdTree.insert(new Point2D(.9, .6));
-        kdTree.insert(new Point2D(.1, .2));
 
-        assert kdTree.root.p.equals(new Point2D(.7, .2));
-        assert kdTree.root.lb.p.equals(new Point2D(.5, .4));
-        assert kdTree.root.rt.p.equals(new Point2D(.9, .6));
-        assert kdTree.root.rt.lb == null;
-        assert kdTree.root.rt.rt == null;
+        String filename = args[0];
+        In in = new In(filename);
+        KdTree kdtree = new KdTree();
+        while (!in.isEmpty())
+        {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            Point2D p = new Point2D(x, y);
+            kdtree.insert(p);
+        }
 
+        double x = 0;
+        double y = 0;
+        Point2D query = new Point2D(x, y);
 
-        Node exist = kdTree.search(new Point2D(.4, .7));
-
-        assert exist != null;
-
-        Node nonExist = kdTree.search(new Point2D(.9, .2));
-
-        assert nonExist == null;
-
-
-        assert kdTree.contains(new Point2D(.4, .7));
-        assert kdTree.contains(new Point2D(.9, .6));
-        assert !kdTree.contains(new Point2D(.2, .1));
+        kdTree.nearest(query);
     }
 
 
