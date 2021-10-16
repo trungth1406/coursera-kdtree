@@ -65,6 +65,9 @@ public class PointSET {
         if (p == null) {
             throw new IllegalArgumentException();
         }
+        if (pointSet.isEmpty()) {
+            return null;
+        }
         Point2D nearest = this.pointSet.first();
         for (Point2D point : this.pointSet) {
             if (point.distanceTo(p) < nearest.distanceTo(p)) {
